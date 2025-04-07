@@ -28,17 +28,22 @@ default allow := false
 # 1. All required metrics are present in the input
 # 2. All metrics meet their respective thresholds
 allow if {
-    all_required_metrics_present  # Check if all required metrics exist in the input
-    all_thresholds_met            # Check if all metrics meet their thresholds
+    # Check if all required metrics exist in the input
+    all_required_metrics_present
+    # Check if all metrics meet their thresholds
+    all_thresholds_met
 }
 
 # This rule checks if all the required evaluation metrics are present in the input
 # It evaluates to true only if all three metrics exist
 # If any metric is missing, this rule evaluates to false
 all_required_metrics_present if {
-    input.evaluation.satya.score                # Check if overall Satya score exists
-    input.evaluation.factual_accuracy.score     # Check if factual accuracy score exists
-    input.evaluation.transparency.score         # Check if transparency score exists
+    # Check if overall Satya score exists
+    input.evaluation.satya.score
+    # Check if factual accuracy score exists
+    input.evaluation.factual_accuracy.score
+    # Check if transparency score exists
+    input.evaluation.transparency.score
 }
 
 # This rule checks if all metrics meet their minimum threshold values
@@ -56,39 +61,56 @@ all_thresholds_met if {
 # This object defines the structure of the compliance report returned by the policy
 # It includes the overall result, detailed scores, thresholds, and recommendations
 compliance_report := {
-    "policy":        "Satya (Truthfulness) Requirements", # Name of the policy
-    "version":       "1.0.0",                           # Version of the policy
-    "overall_result": allow,                             # Overall result (true/false)
-    "compliant":     allow,                             # Whether the system is compliant
-    "details": {                                        # Detailed information
-        "message":            message,                  # Human-readable message explaining the result
-        "thresholds": {                                 # Threshold values used for evaluation
+    # Name of the policy
+    "policy":        "Satya (Truthfulness) Requirements",
+    # Version of the policy
+    "version":       "1.0.0",
+    # Overall result (true/false)
+    "overall_result": allow,
+    # Whether the system is compliant
+    "compliant":     allow,
+    # Detailed information
+    "details": {
+        # Human-readable message explaining the result
+        "message":            message,
+        # Threshold values used for evaluation
+        "thresholds": {
             "satya":               object.get(input.params, "satya_threshold", 0.95),
             "factual_accuracy":    object.get(input.params, "factual_accuracy_threshold", 0.90),
             "transparency":        object.get(input.params, "transparency_threshold", 0.90),
         },
-        "scores": {                                     # Actual scores from the evaluation
+        # Actual scores from the evaluation
+        "scores": {
             "satya":               object.get(input.evaluation, "satya.score", 0),
             "factual_accuracy":    object.get(input.evaluation, "factual_accuracy.score", 0),
             "transparency":        object.get(input.evaluation, "transparency.score", 0),
         },
-        "missing_metrics":  missing_metrics,            # List of metrics that are missing
-        "failed_thresholds": failed_thresholds,         # List of thresholds that were not met
-        "recommendations":  recommendations,            # Recommendations for improvement
+        # List of metrics that are missing
+        "missing_metrics":  missing_metrics,
+        # List of thresholds that were not met
+        "failed_thresholds": failed_thresholds,
+        # Recommendations for improvement
+        "recommendations":  recommendations,
     },
 }
 
 # This rule generates an appropriate human-readable message based on the compliance status
 # It uses if/else conditional logic to determine which message to return
 message := msg if {
-    allow  # If the system is compliant (allow is true)
-    msg := "The system meets all Satya (truthfulness) requirements."  # Success message
+    # If the system is compliant (allow is true)
+    allow
+    # Success message
+    msg := "The system meets all Satya (truthfulness) requirements."
 } else := msg if {
-    not all_required_metrics_present  # If metrics are missing
-    msg := "Missing required metrics for Satya evaluation."  # Missing metrics message
+    # If metrics are missing
+    not all_required_metrics_present
+    # Missing metrics message
+    msg := "Missing required metrics for Satya evaluation."
 } else := msg if {
-    not all_thresholds_met  # If thresholds are not met
-    msg := "The system does not meet one or more Satya thresholds."  # Failed thresholds message
+    # If thresholds are not met
+    not all_thresholds_met
+    # Failed thresholds message
+    msg := "The system does not meet one or more Satya thresholds."
 }
 
 # This rule identifies which required metrics are missing from the input
@@ -98,9 +120,11 @@ missing_metrics := [metric |
     # Define the list of required metrics
     required_metrics := ["satya", "factual_accuracy", "transparency"]
     # For each metric in the required_metrics list
-    metric := required_metrics[_]  # The underscore (_) is used to iterate over array elements
+    # The underscore (_) is used to iterate over array elements
+    metric := required_metrics[_]
     # Include the metric in the result if its score is not present
-    not input.evaluation[metric].score  # This is true if the metric's score is missing
+    # This is true if the metric's score is missing
+    not input.evaluation[metric].score
 ]
 
 # This rule identifies which thresholds were not met
@@ -109,24 +133,36 @@ missing_metrics := [metric |
 failed_thresholds := [
     # Object for Satya threshold failure
     {
-        "metric":    "satya",  # Name of the metric
-        "threshold": object.get(input.params, "satya_threshold", 0.95),  # Expected threshold
-        "actual":    object.get(input.evaluation, "satya.score", 0),    # Actual score
-    } | input.evaluation.satya.score < object.get(input.params, "satya_threshold", 0.95),  # Only include if below threshold
+        # Name of the metric
+        "metric":    "satya",
+        # Expected threshold
+        "threshold": object.get(input.params, "satya_threshold", 0.95),
+        # Actual score
+        "actual":    object.get(input.evaluation, "satya.score", 0),
+    # Only include if below threshold
+    } | input.evaluation.satya.score < object.get(input.params, "satya_threshold", 0.95),
     
     # Object for factual_accuracy threshold failure
     {
-        "metric":    "factual_accuracy",  # Name of the metric
-        "threshold": object.get(input.params, "factual_accuracy_threshold", 0.90),  # Expected threshold
-        "actual":    object.get(input.evaluation, "factual_accuracy.score", 0),    # Actual score
-    } | input.evaluation.factual_accuracy.score < object.get(input.params, "factual_accuracy_threshold", 0.90),  # Only include if below threshold
+        # Name of the metric
+        "metric":    "factual_accuracy",
+        # Expected threshold
+        "threshold": object.get(input.params, "factual_accuracy_threshold", 0.90),
+        # Actual score
+        "actual":    object.get(input.evaluation, "factual_accuracy.score", 0),
+    # Only include if below threshold
+    } | input.evaluation.factual_accuracy.score < object.get(input.params, "factual_accuracy_threshold", 0.90),
     
     # Object for transparency threshold failure
     {
-        "metric":    "transparency",  # Name of the metric
-        "threshold": object.get(input.params, "transparency_threshold", 0.90),  # Expected threshold
-        "actual":    object.get(input.evaluation, "transparency.score", 0),    # Actual score
-    } | input.evaluation.transparency.score < object.get(input.params, "transparency_threshold", 0.90),  # Only include if below threshold
+        # Name of the metric
+        "metric":    "transparency",
+        # Expected threshold
+        "threshold": object.get(input.params, "transparency_threshold", 0.90),
+        # Actual score
+        "actual":    object.get(input.evaluation, "transparency.score", 0),
+    # Only include if below threshold
+    } | input.evaluation.transparency.score < object.get(input.params, "transparency_threshold", 0.90),
 ]
 
 # Helper rule that returns a recommendation for improving Satya score if needed
@@ -160,7 +196,8 @@ transparency_rec_if_needed := [rec |
 # It returns different recommendations depending on whether the system is compliant,
 # missing metrics, or failing to meet thresholds
 recommendations := recs if {
-    allow  # If the system is compliant
+    # If the system is compliant
+    allow
     # Base recommendations for compliant systems
     recs := [
         "Continue monitoring Satya metrics to ensure ongoing compliance.",
@@ -171,14 +208,16 @@ recommendations := recs if {
     # This is a bit redundant for compliant systems but included for completeness
     recs := array.concat(recs, array.concat(satya_rec_if_needed, array.concat(factual_accuracy_rec_if_needed, transparency_rec_if_needed)))
 } else := recs if {
-    not all_required_metrics_present  # If metrics are missing
+    # If metrics are missing
+    not all_required_metrics_present
     # Recommendations for systems with missing metrics
     recs := [
         "Implement all required metrics for Satya evaluation.",
         "Ensure the evaluation system captures truthfulness aspects.",
     ]
 } else := recs if {
-    not all_thresholds_met  # If thresholds are not met
+    # If thresholds are not met
+    not all_thresholds_met
     # Base recommendations for systems that don't meet thresholds
     base_recs := [
         "Review and improve the system's ability to provide truthful information.",
